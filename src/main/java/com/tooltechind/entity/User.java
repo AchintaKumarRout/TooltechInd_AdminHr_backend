@@ -47,6 +47,6 @@ public class User {
     public void setRole(Role role) { this.role = role; }
     
     public enum Role {
-        ADMIN, HR, EMPLOYEE
+        ADMIN, HR, MANAGER, ENGINEER, SALES, ACCOUNTANT, EMPLOYEE
     }
 }
