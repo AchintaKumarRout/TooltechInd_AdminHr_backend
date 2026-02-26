@@ -33,60 +33,73 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-            // ✅ ENABLE CORS
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-            // ✅ DISABLE CSRF (JWT)
             .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(sm ->
+                sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
 
-            // ✅ STATELESS SESSION
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-            // ✅ AUTHORIZATION RULES
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // IMPORTANT
+
+                // ======================
+                // PUBLIC / SYSTEM
+                // ======================
+                .requestMatchers("/error").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // ======================
+                // WEBSITE (PUBLIC)
+                // ======================
+                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/product-spec-table/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers("/api/news").permitAll()
-                .requestMatchers(HttpMethod.DELETE, "/api/admin/news/**").hasRole("ADMIN") 
                 .requestMatchers("/api/auth/**").permitAll()
+
+                // ======================
+                // ADMIN
+                // ======================
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                // ======================
+                // HR / EMPLOYEE
+                // ======================
                 .requestMatchers("/api/hr/**").hasRole("HR")
                 .requestMatchers("/api/employee/**").hasRole("EMPLOYEE")
+
                 .anyRequest().authenticated()
             )
 
-            // ✅ JWT FILTER
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(
+                jwtAuthenticationFilter,
+                UsernamePasswordAuthenticationFilter.class
+            );
 
         return http.build();
     }
 
-    // ✅ PASSWORD ENCODER
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // ✅ AUTHENTICATION MANAGER
     @Bean
     public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration config) throws Exception {
+            AuthenticationConfiguration config
+    ) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // ✅ CORS CONFIGURATION
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration config = new CorsConfiguration();
-
-        config.setAllowedOrigins(List.of("http://localhost:3001")); // React URL
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedOrigins(List.of("http://localhost:3001"));
+        config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+            new UrlBasedCorsConfigurationSource();
 
         source.registerCorsConfiguration("/**", config);
         return source;
