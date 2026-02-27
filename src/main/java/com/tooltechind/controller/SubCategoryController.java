@@ -1,7 +1,6 @@
 package com.tooltechind.controller;
 
 import com.tooltechind.dto.SubCategoryDTO;
-import com.tooltechind.service.FileStorageService;
 import com.tooltechind.service.SubCategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -20,14 +18,16 @@ public class SubCategoryController {
     @Autowired
     private SubCategoryService subCategoryService;
 
-    @Autowired
-    private FileStorageService fileStorageService;
-
     // ===== CREATE =====
     @PostMapping("/admin/sub-categories")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<SubCategoryDTO> createSubCategory(@RequestBody SubCategoryDTO dto) {
-        return ResponseEntity.ok(subCategoryService.createSubCategory(dto));
+    public ResponseEntity<SubCategoryDTO> createSubCategory(
+            @RequestParam("subCategoryName") String subCategoryName,
+            @RequestParam("categoryId") Long categoryId,
+            @RequestParam(value = "image", required = false) MultipartFile image) {
+
+        SubCategoryDTO result = subCategoryService.createSubCategory(subCategoryName, categoryId, image);
+        return ResponseEntity.ok(result);
     }
 
     // ===== UPDATE =====
@@ -35,8 +35,12 @@ public class SubCategoryController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SubCategoryDTO> updateSubCategory(
             @PathVariable Long id,
-            @RequestBody SubCategoryDTO dto) {
-        return ResponseEntity.ok(subCategoryService.updateSubCategory(id, dto));
+            @RequestParam("subCategoryName") String subCategoryName,
+            @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(value = "image", required = false) MultipartFile image) {
+
+        SubCategoryDTO result = subCategoryService.updateSubCategory(id, subCategoryName, categoryId, image);
+        return ResponseEntity.ok(result);
     }
 
     // ===== GET BY ID =====
@@ -59,14 +63,4 @@ public class SubCategoryController {
         subCategoryService.deleteSubCategory(id);
         return ResponseEntity.noContent().build();
     }
-
-//    // ===== UPLOAD IMAGE =====
-//    @PostMapping("/admin/sub-categories/upload-image")
-//    @PreAuthorize("hasRole('ADMIN')")
-//    public ResponseEntity<Map<String, String>> uploadSubCategoryImage(
-//            @RequestParam("file") MultipartFile file) {
-//
-//        String imageUrl = fileStorageService.uploadSubCategoryImage(file); // implement this in your service
-//        return ResponseEntity.ok(Map.of("imageUrl", imageUrl));
-//    }
 }

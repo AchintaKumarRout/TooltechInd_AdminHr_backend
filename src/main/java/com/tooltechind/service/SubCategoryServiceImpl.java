@@ -5,10 +5,12 @@ import com.tooltechind.entity.ProductCategory;
 import com.tooltechind.entity.SubCategory;
 import com.tooltechind.repository.ProductCategoryRepository;
 import com.tooltechind.repository.SubCategoryRepository;
-import com.tooltechind.service.SubCategoryService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,50 +19,71 @@ import java.util.stream.Collectors;
 @Transactional
 public class SubCategoryServiceImpl implements SubCategoryService {
 
+    private static final Logger log = LoggerFactory.getLogger(SubCategoryServiceImpl.class);
+
     @Autowired
     private SubCategoryRepository subCategoryRepository;
 
     @Autowired
     private ProductCategoryRepository productCategoryRepository;
 
-    // ===== CREATE =====
+    @Autowired
+    private FileStorageService fileStorageService;
+
     @Override
-    public SubCategoryDTO createSubCategory(SubCategoryDTO dto) {
+    public SubCategoryDTO createSubCategory(String subCategoryName, Long categoryId, MultipartFile image) {
+        log.info("Creating SubCategory: name={}, categoryId={}, hasImage={}", 
+                 subCategoryName, categoryId, image != null && !image.isEmpty());
+
         SubCategory subCategory = new SubCategory();
-        subCategory.setSubCategoryName(dto.getSubCategoryName());
-        subCategory.setImageUrl(dto.getImageUrl());
+        subCategory.setSubCategoryName(subCategoryName);
+
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = fileStorageService.uploadCategoryImage(image);
+            log.info("Image uploaded to S3: {}", imageUrl);
+            subCategory.setImageUrl(imageUrl);
+        }
 
         ProductCategory productCategory = productCategoryRepository
-                .findById(dto.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("ProductCategory not found"));
+                .findById(categoryId)
+                .orElseThrow(() -> new RuntimeException("ProductCategory not found with id: " + categoryId));
 
         subCategory.setProductCategory(productCategory);
 
         SubCategory saved = subCategoryRepository.save(subCategory);
+        log.info("Saved to DB - id={}, imageUrl={}", saved.getId(), saved.getImageUrl());
+
         return mapToDTO(saved);
     }
 
-    // ===== UPDATE =====
     @Override
-    public SubCategoryDTO updateSubCategory(Long id, SubCategoryDTO dto) {
+    public SubCategoryDTO updateSubCategory(Long id, String subCategoryName, Long categoryId, MultipartFile image) {
+        log.info("Updating SubCategory id={}, hasImage={}", id, image != null && !image.isEmpty());
+
         SubCategory subCategory = subCategoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("SubCategory not found"));
+                .orElseThrow(() -> new RuntimeException("SubCategory not found with id: " + id));
 
-        subCategory.setSubCategoryName(dto.getSubCategoryName());
-        subCategory.setImageUrl(dto.getImageUrl());
+        subCategory.setSubCategoryName(subCategoryName);
 
-        if (dto.getCategoryId() != null) {
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = fileStorageService.uploadCategoryImage(image);
+            log.info("New image uploaded to S3: {}", imageUrl);
+            subCategory.setImageUrl(imageUrl);
+        }
+
+        if (categoryId != null) {
             ProductCategory productCategory = productCategoryRepository
-                    .findById(dto.getCategoryId())
-                    .orElseThrow(() -> new RuntimeException("ProductCategory not found"));
+                    .findById(categoryId)
+                    .orElseThrow(() -> new RuntimeException("ProductCategory not found with id: " + categoryId));
             subCategory.setProductCategory(productCategory);
         }
 
         SubCategory updated = subCategoryRepository.save(subCategory);
+        log.info("Updated in DB - id={}, imageUrl={}", updated.getId(), updated.getImageUrl());
+
         return mapToDTO(updated);
     }
 
-    // ===== GET BY ID =====
     @Override
     public SubCategoryDTO getSubCategoryById(Long id) {
         SubCategory subCategory = subCategoryRepository.findById(id)
@@ -68,7 +91,6 @@ public class SubCategoryServiceImpl implements SubCategoryService {
         return mapToDTO(subCategory);
     }
 
-    // ===== GET ALL =====
     @Override
     public List<SubCategoryDTO> getAllSubCategories() {
         return subCategoryRepository.findAll()
@@ -77,7 +99,6 @@ public class SubCategoryServiceImpl implements SubCategoryService {
                 .collect(Collectors.toList());
     }
 
-    // ===== DELETE =====
     @Override
     public void deleteSubCategory(Long id) {
         SubCategory subCategory = subCategoryRepository.findById(id)
@@ -85,7 +106,6 @@ public class SubCategoryServiceImpl implements SubCategoryService {
         subCategoryRepository.delete(subCategory);
     }
 
-    // ===== HELPER METHOD: ENTITY → DTO =====
     private SubCategoryDTO mapToDTO(SubCategory subCategory) {
         return new SubCategoryDTO(
                 subCategory.getId(),
