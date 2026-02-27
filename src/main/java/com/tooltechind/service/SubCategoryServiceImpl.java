@@ -94,4 +94,12 @@ public class SubCategoryServiceImpl implements SubCategoryService {
                 subCategory.getProductCategory().getId()
         );
     }
+    
+    @Override
+    public List<SubCategoryDTO> getSubCategoriesByCategoryId(Long categoryId) {
+        return subCategoryRepository.findByProductCategoryId(categoryId)
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
 }

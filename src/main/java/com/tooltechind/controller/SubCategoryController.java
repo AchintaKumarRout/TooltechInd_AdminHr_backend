@@ -14,7 +14,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = {"http://localhost:3000"})
+@CrossOrigin(origins = "http://localhost:3000")
 public class SubCategoryController {
 
     @Autowired
@@ -23,50 +23,71 @@ public class SubCategoryController {
     @Autowired
     private FileStorageService fileStorageService;
 
-    // ===== CREATE =====
+    // ===== CREATE SUB CATEGORY =====
     @PostMapping("/admin/sub-categories")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<SubCategoryDTO> createSubCategory(@RequestBody SubCategoryDTO dto) {
+    public ResponseEntity<SubCategoryDTO> createSubCategory(
+            @RequestBody SubCategoryDTO dto) {
         return ResponseEntity.ok(subCategoryService.createSubCategory(dto));
     }
 
-    // ===== UPDATE =====
-    @PutMapping("/admin/sub-categories/{id}")
+    // ===== UPDATE SUB CATEGORY =====
+    @PutMapping("/admin/sub-categories/{subCategoryId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SubCategoryDTO> updateSubCategory(
-            @PathVariable Long id,
+            @PathVariable Long subCategoryId,
             @RequestBody SubCategoryDTO dto) {
-        return ResponseEntity.ok(subCategoryService.updateSubCategory(id, dto));
+        return ResponseEntity.ok(
+                subCategoryService.updateSubCategory(subCategoryId, dto)
+        );
     }
 
-    // ===== GET BY ID =====
-    @GetMapping("/sub-categories/{id}")
-    public ResponseEntity<SubCategoryDTO> getSubCategoryById(@PathVariable Long id) {
-        return ResponseEntity.ok(subCategoryService.getSubCategoryById(id));
+    // ===== GET SUB CATEGORY BY ID =====
+    @GetMapping("/sub-categories/{subCategoryId}")
+    public ResponseEntity<SubCategoryDTO> getSubCategoryById(
+            @PathVariable Long subCategoryId) {
+        return ResponseEntity.ok(
+                subCategoryService.getSubCategoryById(subCategoryId)
+        );
     }
-
-    // ===== GET ALL =====
+    // ===== GET ALL SUB CATEGORIES(ADMIN) =====
     @GetMapping("/admin/sub-categories")
     @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<SubCategoryDTO>> getAllSubCategoriesByAdmin() {
+        return ResponseEntity.ok(subCategoryService.getAllSubCategories());
+    }
+    // ===== GET ALL SUB CATEGORIES =====
+    @GetMapping("/sub-categories")
     public ResponseEntity<List<SubCategoryDTO>> getAllSubCategories() {
         return ResponseEntity.ok(subCategoryService.getAllSubCategories());
     }
 
-    // ===== DELETE =====
-    @DeleteMapping("/admin/sub-categories/{id}")
+    // ===== GET SUB CATEGORIES BY CATEGORY ID (IMPORTANT) =====
+    @GetMapping("/admin/categories/{categoryId}/sub-categories")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteSubCategory(@PathVariable Long id) {
-        subCategoryService.deleteSubCategory(id);
+    public ResponseEntity<List<SubCategoryDTO>> getSubCategoriesByCategoryId(
+            @PathVariable Long categoryId) {
+        return ResponseEntity.ok(
+                subCategoryService.getSubCategoriesByCategoryId(categoryId)
+        );
+    }
+
+    // ===== DELETE SUB CATEGORY =====
+    @DeleteMapping("/admin/sub-categories/{subCategoryId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteSubCategory(
+            @PathVariable Long subCategoryId) {
+        subCategoryService.deleteSubCategory(subCategoryId);
         return ResponseEntity.noContent().build();
     }
 
-//    // ===== UPLOAD IMAGE =====
+    // ===== UPLOAD SUB CATEGORY IMAGE (OPTIONAL) =====
 //    @PostMapping("/admin/sub-categories/upload-image")
 //    @PreAuthorize("hasRole('ADMIN')")
 //    public ResponseEntity<Map<String, String>> uploadSubCategoryImage(
 //            @RequestParam("file") MultipartFile file) {
 //
-//        String imageUrl = fileStorageService.uploadSubCategoryImage(file); // implement this in your service
+//        String imageUrl = fileStorageService.uploadSubCategoryImage(file);
 //        return ResponseEntity.ok(Map.of("imageUrl", imageUrl));
 //    }
 }

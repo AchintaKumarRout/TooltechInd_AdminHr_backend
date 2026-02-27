@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -33,62 +34,58 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-            // ✅ ENABLE CORS
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-            // ✅ DISABLE CSRF (JWT)
+            .cors(Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
-
-            // ✅ STATELESS SESSION
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-            // ✅ AUTHORIZATION RULES
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // IMPORTANT
+
+                // ✅ PRE-FLIGHT
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // ✅ PUBLIC APIs
+                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers("/api/news").permitAll()
-                .requestMatchers(HttpMethod.DELETE, "/api/admin/news/**").hasRole("ADMIN") 
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/error").permitAll()
+
+                // ✅ ADMIN APIs
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                // ✅ HR APIs
                 .requestMatchers("/api/hr/**").hasRole("HR")
+
+                // ✅ EMPLOYEE APIs
                 .requestMatchers("/api/employee/**").hasRole("EMPLOYEE")
+
+                // 🔐 EVERYTHING ELSE
                 .anyRequest().authenticated()
             )
-
-            // ✅ JWT FILTER
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // ✅ PASSWORD ENCODER
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // ✅ AUTHENTICATION MANAGER
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // ✅ CORS CONFIGURATION
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
         CorsConfiguration config = new CorsConfiguration();
-
-        config.setAllowedOrigins(List.of("http://localhost:3001")); // React URL
+        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3001"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
         config.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
 }

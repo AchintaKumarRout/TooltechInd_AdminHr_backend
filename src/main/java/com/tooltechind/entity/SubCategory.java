@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 public class SubCategory {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @Column(name = "sub_category_name", nullable = false)

@@ -14,14 +14,16 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = {"http://localhost:3000"})
+@CrossOrigin(origins = "http://localhost:3000")
 public class ProductCategoryController {
 
-	@Autowired
-	private FileStorageService fileStorageService;
     @Autowired
     private ProductCategoryService service;
 
+    @Autowired
+    private FileStorageService fileStorageService;
+
+    // ===== CREATE CATEGORY =====
     @PostMapping("/admin/product-categories")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductCategoryDTO> createCategory(
@@ -29,40 +31,49 @@ public class ProductCategoryController {
         return ResponseEntity.ok(service.createCategory(dto));
     }
 
-    @PutMapping("/admin/product-categories/{id}")
+    // ===== UPDATE CATEGORY =====
+    @PutMapping("/admin/product-categories/{categoryId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductCategoryDTO> updateCategory(
-            @PathVariable Long id,
+            @PathVariable Long categoryId,
             @RequestBody ProductCategoryDTO dto) {
-        return ResponseEntity.ok(service.updateCategory(id, dto));
+        return ResponseEntity.ok(service.updateCategory(categoryId, dto));
     }
 
-    @GetMapping("/product-categories/{id}")
-    public ResponseEntity<ProductCategoryDTO> getCategoryById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.getCategoryById(id));
+    // ===== GET CATEGORY BY ID (PUBLIC) =====
+    @GetMapping("/product-categories/{categoryId}")
+    public ResponseEntity<ProductCategoryDTO> getCategoryById(
+            @PathVariable Long categoryId) {
+        return ResponseEntity.ok(service.getCategoryById(categoryId));
     }
-
-    @GetMapping("/admin/product-categories")
+    // ===== GET ALL CATEGORIES (ADMIN) =====
+    @GetMapping("admin/product-categories")
     @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ProductCategoryDTO>> getAllCategoriesByAdmin() {
+        return ResponseEntity.ok(service.getAllCategories());
+    }
+    // ===== GET ALL CATEGORIES (PUBLIC) =====
+    @GetMapping("/product-categories")
     public ResponseEntity<List<ProductCategoryDTO>> getAllCategories() {
         return ResponseEntity.ok(service.getAllCategories());
     }
 
-    @DeleteMapping("/admin/product-categories/{id}")
+    // ===== DELETE CATEGORY =====
+    @DeleteMapping("/admin/product-categories/{categoryId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
-        service.deleteCategory(id);
+    public ResponseEntity<Void> deleteCategory(
+            @PathVariable Long categoryId) {
+        service.deleteCategory(categoryId);
         return ResponseEntity.noContent().build();
     }
+
+    // ===== UPLOAD CATEGORY IMAGE =====
     @PostMapping("/admin/product-categories/upload-image")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, String>> uploadCategoryImage(
             @RequestParam("file") MultipartFile file) {
 
         String imageUrl = fileStorageService.uploadCategoryImage(file);
-
-        return ResponseEntity.ok(
-                Map.of("imageUrl", imageUrl)
-        );
+        return ResponseEntity.ok(Map.of("imageUrl", imageUrl));
     }
 }
